@@ -3,11 +3,14 @@
 namespace Staudenmeir\LaravelAdjacencyList\Tests\Graph;
 
 use Carbon\Carbon;
+use Illuminate\Container\Container;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use PHPUnit\Framework\TestCase as Base;
 use Staudenmeir\LaravelAdjacencyList\Tests\Graph\Models\Node;
+use SingleStore\Laravel\Connect\Connection;
+use SingleStore\Laravel\Connect\Connector;
 
 abstract class TestCase extends Base
 {
@@ -16,6 +19,12 @@ abstract class TestCase extends Base
     protected function setUp(): void
     {
         parent::setUp();
+
+        Connection::resolverFor('singlestore', function ($connection, $database, $prefix, $config) {
+            return new Connection($connection, $database, $prefix, $config);
+        });
+
+        Container::getInstance()->bind('db.connector.singlestore', Connector::class);
 
         $this->database = getenv('DATABASE') ?: 'sqlite';
 

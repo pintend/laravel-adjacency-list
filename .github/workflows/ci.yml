@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         php: [8.2, 8.1, 8.0]
-        database: [mysql, mariadb, pgsql, sqlite, sqlsrv]
+        database: [mysql, mariadb, pgsql, singlestore, sqlite, sqlsrv]
         release: [stable, lowest]
         include:
           - database: mysql
@@ -18,6 +18,8 @@ jobs:
             pdo: mysql
           - database: pgsql
             pdo: pgsql
+          - database: singlestore
+            pdo: mysql
           - database: sqlite
             pdo: sqlite
           - database: sqlsrv
@@ -49,6 +51,15 @@ jobs:
           POSTGRES_DB: test
         ports:
           - 5432/tcp
+      singlestoredb:
+        image: ghcr.io/singlestore-labs/singlestoredb-dev
+        ports:
+          - 3306
+        env:
+          ROOT_PASSWORD: password
+          SINGLESTORE_LICENSE: ${{ secrets.SINGLESTORE_LICENSE }}
+        options:
+          --name singlestoredb
       sqlsrv:
         image: mcr.microsoft.com/mssql/server:2019-latest
         env:
@@ -74,6 +85,9 @@ jobs:
           tools: pecl
           extensions: bcmath, ctype, json, mbstring, openssl, pdo, pdo_${{ matrix.pdo }}, tokenizer, xml
           coverage: ${{ matrix.coverage }}
+      - run: |
+          docker exec singlestoredb singlestore -ppassword -e "create database test"
+        if: matrix.database == 'singlestore'
       - run: docker exec sqlsrv /opt/mssql-tools/bin/sqlcmd -S 127.0.0.1 -U sa -P Password! -Q "create database [test]"
         if: matrix.database == 'sqlsrv'
       - run: composer update --no-interaction --no-progress --prefer-dist --prefer-${{ matrix.release }}
@@ -85,6 +99,7 @@ jobs:
           DATABASE: ${{ matrix.database }}
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
           MARIADB_PORT: ${{ job.services.mariadb.ports[3306] }}
+          SINGLESTORE_PORT: ${{ job.services.singlestoredb.ports[3306] }}
           PGSQL_PORT: ${{ job.services.pgsql.ports[5432] }}
           SQLSRV_PORT: ${{ job.services.sqlsrv.ports[1433] }}
       - run: php tests/coverage/scrutinizer.php

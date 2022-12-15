@@ -14,6 +14,7 @@ This Laravel Eloquent extension provides recursive relationships using common ta
 - MySQL 8.0+
 - MariaDB 10.2+
 - PostgreSQL 9.4+
+- SingleStore 8.0+
 - SQLite 3.8.3+
 - SQL Server 2008+
 
